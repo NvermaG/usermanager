@@ -58,6 +58,15 @@ ROOT_URLCONF = 'usermanagement.urls'
 AUTH_USER_MODEL = 'customuser.User'
 AUTHENTICATION_BACKENDS = ['customuser.backends.EmailBackend']
 
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.IsAdminUser',
+    ]
+}
+
+
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',

@@ -19,7 +19,11 @@ class RegisterUserSerializer(serializers.ModelSerializer):
                                             last_name=validated_data['last_name'])
             return user
 
-class CreateUserSerializer(serializers.ModelSerializer):
-    pass
+class ChangeUserPassword(serializers.ModelSerializer):
 
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    class Meta:
+        model = User
+        fields = ['old_password', 'new_password']
 
