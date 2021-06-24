@@ -23,6 +23,16 @@ class RegisterUserSerializer(serializers.ModelSerializer):
         )
         return user
 
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'username', 'email', 'password']
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+
+
+
 
 class ChangeUserPassword(serializers.ModelSerializer):
 
@@ -32,4 +42,13 @@ class ChangeUserPassword(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['old_password', 'new_password']
+
+
+class ResetUserPasswordSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'old_password', 'new_password']
 
