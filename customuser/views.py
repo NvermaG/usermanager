@@ -6,12 +6,12 @@ from .serializers import RegisterUserSerializer, ChangeUserPassword
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework import status
-User = get_user_model()
 
+from django.contrib.auth.models import AbstractBaseUser
 # Create your views here.
 
-
-class RegisterApi(ModelViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin):
+User = get_user_model()
+class RegisterApi(ModelViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin,AbstractBaseUser):
     serializer_class = RegisterUserSerializer
     queryset = User.objects.all()
     http_method_names = ["get", "post", "put", "delete", "patch"]
@@ -19,11 +19,10 @@ class RegisterApi(ModelViewSet, CreateModelMixin, RetrieveModelMixin, UpdateMode
     def register(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        return Response({
-            "user": RegisterUserSerializer(user, context=self.get_serializer_context()).data,
-            "message": "User Created Successfully.  Now perform Login to get your token",
-        })
+        user = RegisterUserSerializer.create(self, serializer.data)
+        user.set_password(serializer.validated_data['password'])
+        user.save()
+        return Response("You are registered")
 
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.queryset, many=True)
