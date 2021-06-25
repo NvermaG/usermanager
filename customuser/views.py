@@ -2,11 +2,17 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth import get_user_model
+from rest_framework_roles.decorators import allowed
+from django.core.mail import send_mail
+from django.conf import settings
 from .serializers import RegisterUserSerializer, ChangeUserPassword, UserSerializer, ResetUserPasswordSerializer
-from rest_framework.permissions import IsAuthenticated
+# from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
+from rest_framework_roles.granting import is_self
 from rest_framework import status
+from django.db import transaction
 from .models import User
+
 
 from django.contrib.auth.models import AbstractBaseUser
 # Create your views here.
@@ -14,11 +20,19 @@ from django.contrib.auth.models import AbstractBaseUser
 User = get_user_model()
 
 
-class RegisterApi(ModelViewSet, AbstractBaseUser):
+class RegisterApi(ModelViewSet):
     serializer_class = RegisterUserSerializer
     queryset = User.objects.all()
     http_method_names = ["get", "post", "put", "delete", "patch"]
 
+    view_permissions = {
+        'retrieve': {'user': is_self, 'admin': True},
+        'create': {'anon': True},
+        'list': {'admin': True},
+    }
+
+    @allowed('anon', 'admin')
+    @transaction.atomic
     def register(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -28,28 +42,27 @@ class RegisterApi(ModelViewSet, AbstractBaseUser):
         return Response("You are registered")
 
 
-class UserApi(ModelViewSet, CreateModelMixin, RetrieveModelMixin, UpdateModelMixin, AbstractBaseUser):
+class UserApi(ModelViewSet):
     serializer_class = UserSerializer
     queryset = User.objects.all()
     http_method_names = ["get", "post", "put", "delete", "patch"]
 
+    @allowed('admin', 'anon', 'user')
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.queryset, many=True)
         return Response(serializer.data)
 
-    def createuser(self, request, *args, **kwargs):
+    @allowed('admin')
+    @transaction.atomic
+    def createuser(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.create(
-            username=serializer.validated_data['username'],
-            first_name=serializer.validated_data['first_name'],
-            last_name=serializer.validated_data['last_name'],
-            email=serializer.validated_data['email'],
-        )
-        user.set_password(serializer.validated_data['password'])
+        user = User.create(self, serializer.data)
+        user.set_password(settings.EMAIL_DEFAULT_PASSWORD)
         user.save()
         return Response("User Created Successfully")
 
+    @allowed('user', 'admin')
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
@@ -60,10 +73,10 @@ class UserChangePassword(ModelViewSet):
 
     def get_object(self, queryset=None):
         obj = self.request.user
-
         return obj
 
-    def changepasswd(self, request, *args, **kwargs):
+    @allowed('anon', 'admin')
+    def changepasswd(self, request):
         self.object = self.get_object()
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
@@ -85,10 +98,11 @@ class UserChangePassword(ModelViewSet):
 
 class UserResetPasswordView(ModelViewSet):
     serializer_class = ResetUserPasswordSerializer
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (AllowAny,)
     model = User
 
-    def post(self, request, *args, **kwargs):
+    @allowed('user', 'admin')
+    def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid()
         old_password = request.data.get("old_password")
@@ -101,6 +115,7 @@ class UserResetPasswordView(ModelViewSet):
         queryset.set_password(serializer.data.get("new_password"))
         queryset.save()
         return Response("successfully reset")
+
 
 
 

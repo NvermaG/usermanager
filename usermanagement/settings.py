@@ -38,9 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_roles',
     'customuser',
     'drf_yasg',
 ]
+
+REST_FRAMEWORK_ROLES = {
+  'roles': 'customuser.roles.ROLES',
+}
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -59,11 +66,17 @@ AUTH_USER_MODEL = 'customuser.User'
 AUTHENTICATION_BACKENDS = ['customuser.backends.EmailBackend']
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
-        'rest_framework.permissions.IsAdminUser',
-    ]
+    'permission_classes': [],
 }
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = "nikhil.verma@oodles.io"
+EMAIL_HOST_PASSWORD = "*Qb8S&gb1"
+EMAIL_DEFAULT_PASSWORD = "abc@123"
+
 
 
 
@@ -90,12 +103,15 @@ WSGI_APPLICATION = 'usermanagement.wsgi.application'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": 'management',
+        "USER": 'management',
+        "PASSWORD": 'eagle',
+        "HOST": 'localhost',
+        "PORT": '5432',
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
