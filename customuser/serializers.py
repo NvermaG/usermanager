@@ -40,9 +40,6 @@ class UserSerializer(serializers.ModelSerializer):
             'password': {'write_only': True}
         }
 
-
-
-
 class ChangeUserPassword(serializers.ModelSerializer):
 
     old_password = serializers.CharField(required=True)
