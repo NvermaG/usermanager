@@ -37,19 +37,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 'rest_framework_roles',
     'rest_framework',
-    'rest_framework_roles',
+    'corsheaders',
     'customuser',
     'drf_yasg',
 ]
 
-REST_FRAMEWORK_ROLES = {
-  'roles': 'customuser.roles.ROLES',
-}
-
-
+# REST_FRAMEWORK_ROLES = {
+#   'roles': 'customuser.roles.ROLES',
+# }
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -57,17 +57,82 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'usermanagement.urls'
 
-
 AUTH_USER_MODEL = 'customuser.User'
+CORS_ORIGIN_ALLOW_ALL =False
+CORS_ORIGIN_WHITELIST = (
+  'http://localhost:8005',
+)
 AUTHENTICATION_BACKENDS = ['customuser.backends.EmailBackend']
 
 REST_FRAMEWORK = {
-    'permission_classes': [],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
+
+
+SWAGGER_SETTINGS = {
+    "enabled_methods": ["get", "post", "put", "patch", "delete"],
+    # default inspector classes, see advanced documentation
+    "DEFAULT_AUTO_SCHEMA_CLASS": "drf_yasg.inspectors.SwaggerAutoSchema",
+    "DEFAULT_FIELD_INSPECTORS": [
+        "drf_yasg.inspectors.CamelCaseJSONFilter",
+        "drf_yasg.inspectors.ReferencingSerializerInspector",
+        "drf_yasg.inspectors.RelatedFieldInspector",
+        "drf_yasg.inspectors.ChoiceFieldInspector",
+        "drf_yasg.inspectors.FileFieldInspector",
+        "drf_yasg.inspectors.DictFieldInspector",
+        "drf_yasg.inspectors.SimpleFieldInspector",
+        "drf_yasg.inspectors.StringDefaultFieldInspector",
+    ],
+    "DEFAULT_FILTER_INSPECTORS": ["drf_yasg.inspectors.CoreAPICompatInspector", ],
+    "DEFAULT_PAGINATOR_INSPECTORS": [
+        "drf_yasg.inspectors.DjangoRestResponsePagination",
+        "drf_yasg.inspectors.CoreAPICompatInspector",
+    ],
+    # default api Info if none is otherwise given; should be an import string to an openapi.Info object
+    "DEFAULT_INFO": None,
+    # default API url if none is otherwise given
+    "DEFAULT_API_URL": "",
+    # 'USE_SESSION_AUTH': True,  # add Django Login and Django Logout buttons, CSRF token to swagger UI page
+    # 'LOGIN_URL': getattr(django.conf.settings, 'LOGIN_URL', None),  # URL for the login button
+    # 'LOGOUT_URL': getattr(django.conf.settings, 'LOGOUT_URL', None),  # URL for the logout button
+    # Swagger security definitions to include in the schema;
+    # see https://github.com/OAI/OpenAPI-Specification/blob/master/versions/2.0.md#security-definitions-object
+    # 'SECURITY_DEFINITIONS': {
+    #     'basic': {
+    #         'type': 'basic'
+    #     }
+    # },
+    # url to an external Swagger validation service; defaults to 'http://online.swagger.io/validator/'
+    # set to None to disable the schema validation badge in the UI
+    "VALIDATOR_URL": "",
+    # swagger-ui configuration settings, see https://github.com/swagger-api/swagger-ui/blob/112bca906553a937ac67adc2e500bdeed96d067b/docs/usage/configuration.md#parameters
+    "OPERATIONS_SORTER": None,
+    "TAGS_SORTER": None,
+    "DOC_EXPANSION": "list",
+    "DEEP_LINKING": False,
+    "SHOW_EXTENSIONS": True,
+    "DEFAULT_MODEL_RENDERING": "model",
+    "DEFAULT_MODEL_DEPTH": 3,
+    "USE_SESSION_AUTH": False,
+    "api_version": "0.1",
+    "SECURITY_DEFINITIONS": {
+        "api_key": {"type": "apiKey", "name": "Authorization", "in": "header"},
+    },
+}
+
+
+
+
+
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
@@ -87,6 +152,7 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',

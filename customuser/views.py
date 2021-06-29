@@ -2,19 +2,17 @@ from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from django.contrib.auth import get_user_model
-from rest_framework_roles.decorators import allowed
-from django.core.mail import send_mail
+# from rest_framework_roles.decorators import allowed
 from django.conf import settings
 from .serializers import RegisterUserSerializer, ChangeUserPassword, UserSerializer, ResetUserPasswordSerializer
-# from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, UpdateModelMixin
-from rest_framework_roles.granting import is_self
+# from rest_framework_roles.granting import is_self
+from rest_framework.permissions import BasePermission, IsAuthenticated, AllowAny
 from rest_framework import status
 from django.db import transaction
-from .models import User
+# from .models import User
+from django.utils.decorators import method_decorator
+from .swagger import UserSwagger
 
-
-from django.contrib.auth.models import AbstractBaseUser
 # Create your views here.
 
 User = get_user_model()
@@ -25,19 +23,20 @@ class RegisterApi(ModelViewSet):
     queryset = User.objects.all()
     http_method_names = ["get", "post", "put", "delete", "patch"]
 
-    view_permissions = {
-        'retrieve': {'user': is_self, 'admin': True},
-        'create': {'anon': True},
-        'list': {'admin': True},
-    }
+    # view_permissions = {
+    #     'retrieve': {'user': is_self, 'admin': True},
+    #     'create': {'anon': True},
+    #     'list': {'admin': True},
+    # }
 
-    @allowed('anon', 'admin')
+    # @allowed('anon', 'admin')
     @transaction.atomic
     def register(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = RegisterUserSerializer.create(self, serializer.data)
-        user.set_password(serializer.validated_data['password'])
+        # user = RegisterUserSerializer.create(self, serializer.data)
+        user = serializer.save()
+        user.set_password(serializer.data.get('password'))
         user.save()
         return Response("You are registered")
 
@@ -47,85 +46,80 @@ class UserApi(ModelViewSet):
     queryset = User.objects.all()
     http_method_names = ["get", "post", "put", "delete", "patch"]
 
-    @allowed('admin', 'anon', 'user')
+    # @allowed('admin', 'anon', 'user')
     def get(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.queryset, many=True)
         return Response(serializer.data)
 
-    @allowed('admin')
+    # @allowed('admin')
     @transaction.atomic
-    def createuser(self, request):
+    def create_user(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.create(self, serializer.data)
+        # user = User.create(self, serializer.data)
+        user = serializer.save()
         user.set_password(settings.EMAIL_DEFAULT_PASSWORD)
         user.save()
         return Response("User Created Successfully")
 
-    @allowed('user', 'admin')
+    # @allowed('user', 'admin')
     def patch(self, request, *args, **kwargs):
         return self.partial_update(request, *args, **kwargs)
 
 
+@method_decorator(name="change_password", decorator=UserSwagger.change_password())
 class UserChangePassword(ModelViewSet):
-    serializer_class = ChangeUserPassword
-    model = User
+    # serializer_class = ChangeUserPassword
+    permission_classes = (IsAuthenticated,)
+    queryset = User.objects.filter(is_active=True)
 
-    def get_object(self, queryset=None):
-        obj = self.request.user
-        return obj
+    def get_password(self):
+        old_password = self.request.data.get('old_password')
+        new_password = self.request.data.get('new_password')
+        return old_password, new_password
 
-    @allowed('anon', 'admin')
-    def changepasswd(self, request):
-        self.object = self.get_object()
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            # Check old password
-            if not self.object.check_password(serializer.data.get("old_password")):
-                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
-            # set_password also hashes the password that the user will get
-            self.object.set_password(serializer.data.get("new_password"))
-            self.object.save()
-            response = {
-                'status': 'success',
-                'code': status.HTTP_200_OK,
-                'message': 'Password updated successfully',
-                'data': []
-            }
-            return Response(response)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def change_password(self, request):
+        old_password, new_password = self.get_password()
+        request.user.change_password(old_password, new_password)
+        return Response("Password successfully changed")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        # self.object = self.get_object()
+        # user = self.request.user
+        # serializer = self.get_serializer(data=request.data)
+        # flag = "Change"
+        # if serializer.is_valid():
+        #     response = user.resetandchangepass(serializer.data, flag)
+        #     return Response(response)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserResetPasswordView(ModelViewSet):
     serializer_class = ResetUserPasswordSerializer
-    # permission_classes = (AllowAny,)
     model = User
 
-    @allowed('user', 'admin')
+
+    # @allowed('anon')
+    @transaction.atomic
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid()
-        old_password = request.data.get("old_password")
-        new_password = request.data.get("new_password")
-        queryset = User.objects.get(email=serializer.data.get('email'))
-        if not queryset.check_password(serializer.data.get("old_password")):
-            return Response("wrong passwd")
-        if old_password == new_password:
-            return Response("New password and old password could not be same")
-        queryset.set_password(serializer.data.get("new_password"))
-        queryset.save()
-        return Response("successfully reset")
-
-
-
-
-
-
-        # if queryset:
-        #     request.user.passwdreset(serializer.data, old_password, new_password)
+        # if self.request.user.is_superuser and self.request.user.is_anonymous:
+        #     return Response("You do not have permission to perform this action.")
         # else:
-        #     return Response("These data does not exist")
-
-        # return Response("successfully")
-
-
+        serializer = self.get_serializer(data=request.data)
+        flag = "Reset"
+        serializer.is_valid()
+        response = User.Resetandchangepass(self, serializer.data, flag)
+        return Response(response)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
