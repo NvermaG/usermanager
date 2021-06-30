@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'customuser',
     'drf_yasg',
+    'django_filters',
 ]
 
 # REST_FRAMEWORK_ROLES = {

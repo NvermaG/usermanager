@@ -12,7 +12,7 @@ from django.db import transaction
 # from .models import User
 from django.utils.decorators import method_decorator
 from .swagger import UserSwagger
-
+from .managers import Otp_authentication
 # Create your views here.
 
 User = get_user_model()
@@ -78,48 +78,60 @@ class UserChangePassword(ModelViewSet):
         new_password = self.request.data.get('new_password')
         return old_password, new_password
 
+    @transaction.atomic
     def change_password(self, request):
         old_password, new_password = self.get_password()
-        request.user.change_password(old_password, new_password)
-        return Response("Password successfully changed")
+        response = request.user.change_password(old_password, new_password)
+        return Response(response)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-        # self.object = self.get_object()
-        # user = self.request.user
-        # serializer = self.get_serializer(data=request.data)
-        # flag = "Change"
-        # if serializer.is_valid():
-        #     response = user.resetandchangepass(serializer.data, flag)
-        #     return Response(response)
-        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
+@method_decorator(name="reset_password", decorator=UserSwagger.reset_password())
+@method_decorator(name="forget_password", decorator=UserSwagger.forget_password())
 class UserResetPasswordView(ModelViewSet):
-    serializer_class = ResetUserPasswordSerializer
-    model = User
+    permission_classes = (AllowAny,)
+    queryset = User.objects.filter(is_active=True)
+
+    def get_email(self):
+        email = self.request.data.get('Email')
+        return email
+
+    @transaction.atomic
+    def forget_password(self, request):
+        email = self.get_email()
+        user = User.objects.get(email=email)
+        user.otp = Otp_authentication()
+        print("Otp =", user.otp)
+        user.save()
+        return Response("OTP Generate Successfully")
+
+    @transaction.atomic
+    def reset_password(self, request):
+        email = self.get_email()
+        user = User.objects.get(email=email)
+        otp = self.request.data.get('Otp')
+        password = self.request.data.get('new_password')
+        if user.otp == otp:
+            response = user.reset_password(password)
+            user.otp = Otp_authentication()
+            user.save()
+            return Response(response)
+        else:
+            return Response("Invalid Otp")
+
+
+
+
 
 
     # @allowed('anon')
-    @transaction.atomic
-    def post(self, request):
-        # if self.request.user.is_superuser and self.request.user.is_anonymous:
-        #     return Response("You do not have permission to perform this action.")
-        # else:
-        serializer = self.get_serializer(data=request.data)
-        flag = "Reset"
-        serializer.is_valid()
-        response = User.Resetandchangepass(self, serializer.data, flag)
-        return Response(response)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    # @transaction.atomic
+    # def post(self, request):
+    #     if self.request.user.is_superuser and self.request.user.is_anonymous:
+    #         return Response("You do not have permission to perform this action.")
+    #     else:
+        # serializer = self.get_serializer(data=request.data)
+        # flag = "Reset"
+        # serializer.is_valid()
+        # response = User.Resetandchangepass(self, serializer.data, flag)
+        # return Response(response)
+        # return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
