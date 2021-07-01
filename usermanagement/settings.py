@@ -11,6 +11,12 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=".env")
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,7 +84,6 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
 }
 
-
 SWAGGER_SETTINGS = {
     "enabled_methods": ["get", "post", "put", "patch", "delete"],
     # default inspector classes, see advanced documentation
@@ -139,11 +144,12 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_USE_TLS = True
 EMAIL_PORT = 587
-EMAIL_HOST_USER = ""
-EMAIL_HOST_PASSWORD = ""
+EMAIL_HOST_USER = os.getenv("default_from_email")
+EMAIL_HOST_PASSWORD = os.getenv('default_email_password')
 EMAIL_DEFAULT_PASSWORD = "abc@123"
 
-
+print(os.getenv("default_from_email"))
+print(os.getenv('default_email_password'))
 
 
 TEMPLATES = [

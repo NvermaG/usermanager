@@ -14,24 +14,12 @@ class User(AbstractUser):
     email = models.EmailField(_('email address'), unique=True)
     otp = models.CharField(max_length=10, null=True)
 
-    def mail_sent(self, subject, message, recipient_list=None):
+    def mail_sent(self, message=None):
         email_from = settings.EMAIL_HOST_USER
+        subject = 'Welcome to our UserManagement'
+        recipient_list = [self.email]
         send_mail(subject, message, email_from, recipient_list)
         return True
-
-    def create(self, validated_data):
-        user = User.objects.create(
-            username=validated_data['username'],
-            first_name=validated_data['first_name'],
-            last_name=validated_data['last_name'],
-            email=validated_data['email'],
-        )
-        # subject = 'Welcome to our UserManagement'
-        # message = f'Hi {user.username}, thank you for join us in UserManagement Project.And Your default password is {settings.EMAIL_DEFAULT_PASSWORD}, kindly login and Change the password'
-        # recipient_list = [user.email]
-        # User.mailsent = classmethod(User.mailsent)
-        # User.mailsent(subject, message, recipient_list)
-        return user
 
     def validate_password(self, old_password, new_password):
         if not check_validation(new_password):

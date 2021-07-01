@@ -2,7 +2,6 @@ import re
 import random
 
 
-
 def check_validation(password):
     p = re.compile('[1-9]')
     match = re.search(p, password)
@@ -12,10 +11,9 @@ def check_validation(password):
         return False
 
 
-def Otp_authentication():
+def otp_authentication():
     otp = random.randint(1000, 9999)
     return str(otp)
-
 
 
 

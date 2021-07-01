@@ -31,7 +31,7 @@ class UserSwagger:
                 type=openapi.TYPE_OBJECT,
                 properties={
                     'Email': openapi.Schema(type=openapi.TYPE_STRING, description='Email'),
-                    'Otp': openapi.Schema(type=openapi.TYPE_STRING, description='Otp'),
+                    'otp': openapi.Schema(type=openapi.TYPE_STRING, description='otp'),
                     'new_password': openapi.Schema(type=openapi.TYPE_STRING, description='New Password'),
                 }),
             responses={status.HTTP_200_OK: _("Your password has been changed successfully.")}
